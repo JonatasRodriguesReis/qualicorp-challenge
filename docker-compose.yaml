@@ -1,0 +1,39 @@
+version: "3.8"
+services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: qualicorp_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d qualicorp_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  pgAdmin:
+    container_name: pgadmin-container
+    image: dpage/pgadmin4:8.9
+    ports:
+      - 15432:80
+    depends_on:
+      - db
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgres://user:password@db:5432/qualicorp_db
+      DB_TYPE: postgres
+    depends_on:
+      db:
+        condition: service_healthy
