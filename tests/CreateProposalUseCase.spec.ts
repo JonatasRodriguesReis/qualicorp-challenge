@@ -1,6 +1,7 @@
 import { Plan } from "../src/domain/entities/Plan";
 import { PricingService } from "../src/domain/services/PricingService";
 import { CreateProposalUseCase } from "../src/application/use-cases/CreateProposalUseCase";
+import { BradescoPricingStrategy } from "../src/domain/services/IPricingStrategy";
 
 describe("CreateProposalUseCase", () => {
   const mockPlan = new Plan("plan-gold", "Gold", 300.0);
@@ -16,19 +17,19 @@ describe("CreateProposalUseCase", () => {
     findById: jest.fn(),
   };
 
-  const pricingService = new PricingService();
+  const pricingService = new PricingService(new BradescoPricingStrategy());
   const useCase = new CreateProposalUseCase(
     mockPropRepo,
     mockPlanRepo,
     pricingService
   );
 
-  it("should calculate price as: Plan Base Price + Member Age Rates", async () => {
+  it("should create proposal and calculate price using bradesco", async () => {
     const input = {
       planId: "plan-gold",
       members: [
-        { name: "Jonatas", age: 30, isHolder: true }, // Rate: 450.00
-        { name: "Child", age: 10, isHolder: false }, // Rate: 200.00
+        { name: "Jonatas", age: 30, isHolder: true },
+        { name: "Child", age: 10, isHolder: false },
       ],
     };
 
@@ -37,9 +38,8 @@ describe("CreateProposalUseCase", () => {
     expect(id).toBeDefined();
     expect(mockPlanRepo.findById).toHaveBeenCalledWith("plan-gold");
 
-    // Verification: Jonatas (450) + Child (200) = 950.00
     const savedProposal = (mockPropRepo.save as jest.Mock).mock.calls[0][0];
-    expect(savedProposal.totalPrice).toBe(950.0);
+    expect(savedProposal.totalPrice).toBe(630.0);
     expect(savedProposal.members.length).toBe(2);
   });
 

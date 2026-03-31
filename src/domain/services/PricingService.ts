@@ -1,5 +1,6 @@
 import { Member } from "../entities/Member";
 import { Plan } from "../entities/Plan";
+import { IPricingStrategy } from "./IPricingStrategy";
 
 export interface PriceRule {
   minAge: number;
@@ -8,34 +9,13 @@ export interface PriceRule {
 }
 
 export class PricingService {
-  private readonly defaultRules: PriceRule[] = [
-    { minAge: 0, maxAge: 18, value: 200.0 },
-    { minAge: 19, maxAge: 40, value: 450.0 },
-    { minAge: 41, maxAge: 120, value: 800.0 },
-  ];
+  constructor(private pricingStrategy: IPricingStrategy) {}
 
   calculateTotal(plan: Plan, members: Member[]): number {
     if (members.length === 0) return 0;
 
-    const membersPrice = members.reduce((total, member) => {
-      const rule = this.findRuleForAge(member.age);
-      return total + rule.value;
-    }, 0);
+    const totalPrice = this.pricingStrategy.calculate(plan, members);
 
-    const basePrice = plan.basePrice || 0;
-
-    return basePrice + membersPrice;
-  }
-
-  private findRuleForAge(age: number): PriceRule {
-    const rule = this.defaultRules.find(
-      (r) => age >= r.minAge && age <= r.maxAge
-    );
-
-    if (!rule) {
-      throw new Error(`None price rule found for the age: ${age}`);
-    }
-
-    return rule;
+    return totalPrice;
   }
 }

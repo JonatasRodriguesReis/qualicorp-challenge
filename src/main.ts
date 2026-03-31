@@ -9,6 +9,7 @@ import { ProposalController } from "./presentation/ProposalController";
 import { PostgresPlanRepository } from "./infrastructure/repositories/PostgresPlanRepository";
 import { InMemoryPlanRepository } from "./infrastructure/repositories/InMemoryPlanRepository";
 import { GetProposalDetailsUseCase } from "./application/use-cases/GetProposalDetailsUseCase";
+import { PricingStrategyFactory } from "./domain/factories/PricingStrategyFactory";
 
 const app = express();
 app.use(express.json());
@@ -27,9 +28,11 @@ const planRepository =
   process.env.DB_TYPE === "postgres"
     ? new PostgresPlanRepository(pool)
     : new InMemoryPlanRepository();
+const provider = process.env.PRICING_PROVIDER || "sulamerica";
+const pricingStrategy = PricingStrategyFactory.create(provider);
 
 // 3. Dependency Injection
-const pricingService = new PricingService();
+const pricingService = new PricingService(pricingStrategy);
 const createProposalUseCase = new CreateProposalUseCase(
   proposalRepository,
   planRepository,
